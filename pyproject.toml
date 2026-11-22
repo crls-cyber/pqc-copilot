@@ -1,0 +1,17 @@
+[project]
+name = "pqc-copilot"
+version = "0.1.0"
+description = "Copilote multi-agents de migration post-quantique : inventaire cryptographique (CBOM), analyse de risque et démonstrateur TLS hybride."
+readme = "README.md"
+authors = [
+    { name = "crls-cyber", email = "282925640+crls-cyber@users.noreply.github.com" }
+]
+requires-python = ">=3.12"
+dependencies = []
+
+[project.scripts]
+pqc-copilot = "pqc_copilot:main"
+
+[build-system]
+requires = ["uv_build>=0.13.8,<0.14.0"]
+build-backend = "uv_build"
