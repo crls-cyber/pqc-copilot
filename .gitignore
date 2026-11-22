@@ -1,0 +1,56 @@
+# ---------------------------------------------------------------------------
+# .gitignore — pqc-copilot
+# Fichiers et répertoires que Git ne doit jamais suivre.
+# ---------------------------------------------------------------------------
+
+# --- Secrets et identifiants (JAMAIS versionnés) ---------------------------
+.env
+.env.*
+*.key
+*.pem
+*.p12
+*.pfx
+id_rsa*
+id_ed25519*
+id_ecdsa*
+secrets/
+*.secret
+*.token
+
+# --- Python : caches et fichiers compilés ----------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# --- Environnements virtuels -----------------------------------------------
+.venv/
+venv/
+env/
+
+# --- Outils de test et de qualité ------------------------------------------
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+
+# --- Poids de modèles / gros binaires --------------------------------------
+*.gguf
+*.bin
+
+# --- Éditeurs et systèmes d'exploitation -----------------------------------
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+Thumbs.db
+
+# --- Jupyter ---------------------------------------------------------------
+.ipynb_checkpoints/
