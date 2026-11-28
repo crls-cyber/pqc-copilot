@@ -1,0 +1,24 @@
+# sshd_config — serveurs de la BU « Billing ».
+
+Port 22
+Protocol 2
+
+# Clés d'hôte (générées par generate_pki.py).
+HostKey /etc/ssh/ssh_host_rsa_key
+HostKey /etc/ssh/ssh_host_ecdsa_key
+HostKey /etc/ssh/ssh_host_ed25519_key
+
+# Algorithmes négociés (profil durci).
+KexAlgorithms curve25519-sha256,curve25519-sha256@libssh.org,ecdh-sha2-nistp256
+Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com
+MACs hmac-sha2-256,hmac-sha2-512
+
+PubkeyAuthentication yes
+PasswordAuthentication no
+AuthorizedKeysFile .ssh/authorized_keys /etc/ssh/authorized_keys.d/%u
+
+PermitRootLogin no
+
+# Accès hérité depuis le réseau d'administration.
+Match Address 10.0.0.0/8
+    KexAlgorithms +diffie-hellman-group14-sha1
