@@ -1,0 +1,558 @@
+# Vérité terrain — SI fictif « Billing » (variante A)
+# Projet individuel n° 7 — Quantum-Ready — pqc-copilot
+#
+# Chaque entrée décrit un actif cryptographique PLANTÉ volontairement dans le SI.
+# Ce fichier est la RÉFÉRENCE contre laquelle l'inventaire produit par les agents
+# est évalué (rappel / précision), global et par type d'actif.
+#
+# Champs :
+#   type        : algorithm | certificate | protocol | related-crypto-material
+#   visibilite  : visible | cache
+#   masquage    : dependance | code-mort | config-indirecte | cle-en-dur | backup | env-exemple
+#   statut      : robuste | vulnerable-q | deprecie-proche | a-bannir
+#
+# Statut -> vague de migration : a-bannir=V1 (urgent), deprecie-proche=V2, vulnerable-q=V3 (PQC).
+
+meta:
+  si: billing
+  variante: A
+  version: 1
+  total_actifs: 54
+  total_caches: 14
+  scenario: "SI de facturation d'une Business Unit d'un grand groupe"
+
+actifs:
+
+  # ==================== API Python (FastAPI) ====================
+  - id: API-01
+    composant: api
+    emplacement: "api/auth/passwords.py — hachage des mots de passe"
+    type: algorithm
+    primitive: bcrypt
+    usage: "stockage des mots de passe utilisateurs"
+    visibilite: visible
+    statut: robuste
+
+  - id: API-02
+    composant: api
+    emplacement: "api/auth/jwt.py — signature des jetons de session (HS256)"
+    type: algorithm
+    primitive: HMAC-SHA256
+    usage: "signature des JWT de session"
+    visibilite: visible
+    statut: robuste
+
+  - id: API-03
+    composant: api
+    emplacement: "api/auth/jwt.py — signature inter-services (RS256)"
+    type: algorithm
+    primitive: RSA-2048
+    usage: "signature des JWT inter-services"
+    visibilite: visible
+    statut: deprecie-proche
+    notes: "ANSSI : migrer vers >= 3072 d'ici 2030 ; aussi vulnérable quantique"
+
+  - id: API-04
+    composant: api
+    emplacement: "api/core/crypto.py — chiffrement des IBAN au repos"
+    type: algorithm
+    primitive: AES-256-GCM
+    usage: "chiffrement des coordonnées bancaires"
+    visibilite: visible
+    statut: robuste
+
+  - id: API-05
+    composant: api
+    emplacement: "api/core/crypto.py — dérivation de clé"
+    type: algorithm
+    primitive: PBKDF2-HMAC-SHA256
+    usage: "dérivation de clé de chiffrement"
+    visibilite: visible
+    statut: robuste
+
+  - id: API-06
+    composant: api
+    emplacement: "api/core/random.py — génération d'aléa"
+    type: related-crypto-material
+    primitive: CSPRNG (secrets / os.urandom)
+    usage: "génération de jetons et de sels"
+    visibilite: visible
+    statut: robuste
+
+  - id: API-07
+    composant: api
+    emplacement: "api/payments/psp_client.py — appel sortant au prestataire de paiement"
+    type: protocol
+    primitive: TLS 1.2 / TLS 1.3
+    usage: "canal chiffré vers le PSP tiers"
+    visibilite: visible
+    statut: deprecie-proche
+    notes: "TLS 1.2 encore autorisé, en voie de dépréciation"
+
+  - id: API-08
+    composant: api
+    emplacement: "api/payments/webhooks.py — vérification des webhooks"
+    type: algorithm
+    primitive: HMAC-SHA256
+    usage: "authentification des webhooks entrants"
+    visibilite: visible
+    statut: robuste
+
+  - id: API-09
+    composant: api
+    emplacement: "api/auth/api_keys.py — empreinte des clés d'API"
+    type: algorithm
+    primitive: SHA-256
+    usage: "stockage d'empreintes de jetons d'API"
+    visibilite: visible
+    statut: robuste
+
+  - id: API-10
+    composant: api
+    emplacement: "api/core/crypto.py — chiffrement d'un champ métier"
+    type: algorithm
+    primitive: AES-128-CBC (IV statique)
+    usage: "chiffrement d'un identifiant interne"
+    visibilite: visible
+    statut: a-bannir
+    notes: "IV statique : anti-pattern"
+
+  - id: API-11
+    composant: api
+    emplacement: "api/core/settings.py — SECRET_KEY codée en dur"
+    type: related-crypto-material
+    primitive: clé AES-128 en dur
+    usage: "clé symétrique codée dans le source"
+    visibilite: cache
+    masquage: cle-en-dur
+    statut: a-bannir
+
+  - id: API-12
+    composant: api
+    emplacement: "api/legacy/crypto_utils.py — _legacy_encrypt(), sans appelant"
+    type: algorithm
+    primitive: 3DES
+    usage: "code mort"
+    visibilite: cache
+    masquage: code-mort
+    statut: a-bannir
+    notes: "fonction définie mais jamais invoquée"
+
+  - id: API-13
+    composant: api
+    emplacement: "api/legacy/hashing.py — util obsolète importé mais inutilisé"
+    type: algorithm
+    primitive: MD5
+    usage: "code mort"
+    visibilite: cache
+    masquage: code-mort
+    statut: a-bannir
+
+  - id: API-14
+    composant: api
+    emplacement: "api/core/crypto.py — chiffrement d'une archive interne"
+    type: algorithm
+    primitive: AES-128-ECB
+    usage: "chiffrement d'un export interne"
+    visibilite: visible
+    statut: a-bannir
+    notes: "mode ECB : anti-pattern"
+
+  - id: API-15
+    composant: api
+    emplacement: "api/auth/sessions.py — signature des cookies de session"
+    type: algorithm
+    primitive: HMAC-SHA1
+    usage: "signature des cookies de session"
+    visibilite: visible
+    statut: deprecie-proche
+
+  - id: API-16
+    composant: api
+    emplacement: "api/auth/jwt.py — validateur acceptant alg=none"
+    type: algorithm
+    primitive: JWT alg=none
+    usage: "confusion d'algorithme (validation permissive)"
+    visibilite: cache
+    masquage: config-indirecte
+    statut: a-bannir
+
+  - id: API-17
+    composant: api
+    emplacement: "api/legacy/obfuscate.py — pseudo-chiffrement"
+    type: algorithm
+    primitive: base64 (obfuscation)
+    usage: "présenté comme protection, sans valeur cryptographique"
+    visibilite: cache
+    masquage: code-mort
+    statut: a-bannir
+
+  - id: API-18
+    composant: api
+    emplacement: "api/invoices/encrypt.py — chiffrement applicatif d'un champ"
+    type: algorithm
+    primitive: RSA-2048 (OAEP)
+    usage: "chiffrement applicatif d'un numéro de facture"
+    visibilite: visible
+    statut: deprecie-proche
+    notes: "ANSSI : migrer vers >= 3072 d'ici 2030 ; aussi vulnérable quantique"
+
+  # ==================== nginx ====================
+  - id: NGX-01
+    composant: nginx
+    emplacement: "nginx/conf.d/tls.conf — ssl_protocols"
+    type: protocol
+    primitive: TLS 1.3
+    usage: "terminaison TLS du reverse proxy"
+    visibilite: visible
+    statut: robuste
+
+  - id: NGX-02
+    composant: nginx
+    emplacement: "nginx/conf.d/tls.conf — ssl_protocols"
+    type: protocol
+    primitive: TLS 1.2
+    usage: "compatibilité ascendante"
+    visibilite: visible
+    statut: deprecie-proche
+
+  - id: NGX-03
+    composant: nginx
+    emplacement: "nginx/conf.d/tls.conf — ssl_ciphers"
+    type: algorithm
+    primitive: ECDHE-RSA-AES256-GCM-SHA384
+    usage: "suite de chiffrement TLS"
+    visibilite: visible
+    statut: vulnerable-q
+    notes: "ECDHE + RSA : vulnérables quantique"
+
+  - id: NGX-04
+    composant: nginx
+    emplacement: "nginx/conf.d/tls.conf — groupe d'échange"
+    type: related-crypto-material
+    primitive: X25519
+    usage: "échange de clés TLS"
+    visibilite: visible
+    statut: vulnerable-q
+
+  - id: NGX-05
+    composant: nginx
+    emplacement: "nginx/conf.d/tls.conf — ssl_dhparam"
+    type: related-crypto-material
+    primitive: DH-2048 (corps fini)
+    usage: "paramètres Diffie-Hellman"
+    visibilite: visible
+    statut: deprecie-proche
+
+  - id: NGX-07
+    composant: nginx
+    emplacement: "nginx/snippets/legacy-ciphers.conf — hérité d'un include"
+    type: algorithm
+    primitive: AES128-SHA (sans PFS)
+    usage: "suite de chiffrement faible héritée"
+    visibilite: cache
+    masquage: config-indirecte
+    statut: a-bannir
+    notes: "pas de confidentialité persistante, MAC SHA-1"
+
+  - id: NGX-08
+    composant: nginx
+    emplacement: "nginx/conf.d/legacy-vhost.conf — échange RSA statique"
+    type: protocol
+    primitive: TLS 1.2 RSA key exchange
+    usage: "vhost interne sans PFS"
+    visibilite: visible
+    statut: a-bannir
+    notes: "échange RSA statique : pas de confidentialité persistante"
+
+  # ==================== SSH ====================
+  - id: SSH-01
+    composant: ssh
+    emplacement: "ssh/ssh_host_rsa_key"
+    type: related-crypto-material
+    primitive: RSA-2048
+    usage: "clé d'hôte SSH"
+    visibilite: visible
+    statut: deprecie-proche
+
+  - id: SSH-02
+    composant: ssh
+    emplacement: "ssh/ssh_host_ecdsa_key"
+    type: related-crypto-material
+    primitive: ECDSA P-256
+    usage: "clé d'hôte SSH"
+    visibilite: visible
+    statut: vulnerable-q
+
+  - id: SSH-03
+    composant: ssh
+    emplacement: "ssh/ssh_host_ed25519_key"
+    type: related-crypto-material
+    primitive: Ed25519
+    usage: "clé d'hôte SSH"
+    visibilite: visible
+    statut: vulnerable-q
+    notes: "recommandé classiquement, mais ECC donc vulnérable quantique"
+
+  - id: SSH-04
+    composant: ssh
+    emplacement: "ssh/sshd_config — KexAlgorithms"
+    type: protocol
+    primitive: curve25519-sha256
+    usage: "échange de clés SSH"
+    visibilite: visible
+    statut: vulnerable-q
+
+  - id: SSH-05
+    composant: ssh
+    emplacement: "ssh/sshd_config — Ciphers"
+    type: algorithm
+    primitive: chacha20-poly1305
+    usage: "chiffrement de session SSH"
+    visibilite: visible
+    statut: robuste
+
+  - id: SSH-06
+    composant: ssh
+    emplacement: "ssh/sshd_config — MACs"
+    type: algorithm
+    primitive: hmac-sha2-256
+    usage: "intégrité de session SSH"
+    visibilite: visible
+    statut: robuste
+
+  - id: SSH-07
+    composant: ssh
+    emplacement: "ssh/authorized_keys — clé admin"
+    type: related-crypto-material
+    primitive: Ed25519
+    usage: "clé publique autorisée d'un administrateur"
+    visibilite: visible
+    statut: vulnerable-q
+
+  - id: SSH-08
+    composant: ssh
+    emplacement: "ssh/sshd_config — KEX hérité du défaut"
+    type: algorithm
+    primitive: diffie-hellman-group14-sha1
+    usage: "algorithme d'échange activé implicitement"
+    visibilite: cache
+    masquage: config-indirecte
+    statut: a-bannir
+    notes: "SHA-1"
+
+  - id: SSH-09
+    composant: ssh
+    emplacement: "ssh/authorized_keys.d/legacy — vieille entrée"
+    type: related-crypto-material
+    primitive: DSA-1024
+    usage: "clé publique autorisée héritée"
+    visibilite: cache
+    masquage: backup
+    statut: a-bannir
+    notes: "DSA retiré par le NIST"
+
+  # ==================== PKI (6 certificats imposés + additionnels) ====================
+  - id: CRT-01
+    composant: pki
+    emplacement: "pki/root-ca.crt"
+    type: certificate
+    primitive: RSA-4096 / signature RSA-SHA256
+    usage: "autorité de certification racine interne"
+    visibilite: visible
+    statut: vulnerable-q
+
+  - id: CRT-02
+    composant: pki
+    emplacement: "pki/intermediate-ca.crt"
+    type: certificate
+    primitive: ECDSA P-384
+    usage: "autorité de certification intermédiaire"
+    visibilite: visible
+    statut: vulnerable-q
+
+  - id: CRT-03
+    composant: pki
+    emplacement: "pki/server-tls.crt"
+    type: certificate
+    primitive: ECDSA P-256
+    usage: "certificat serveur api.billing.example"
+    visibilite: visible
+    statut: vulnerable-q
+    relations:
+      - type: utilise-par
+        avec: nginx
+        note: "référencé par ssl_certificate"
+
+  - id: CRT-04
+    composant: pki
+    emplacement: "pki/client-mtls.crt"
+    type: certificate
+    primitive: RSA-2048
+    usage: "certificat client mTLS (inter-BU)"
+    visibilite: visible
+    statut: deprecie-proche
+
+  - id: CRT-05
+    composant: pki
+    emplacement: "pki/facture-signing.crt"
+    type: certificate
+    primitive: RSA-2048
+    usage: "certificat de signature des factures"
+    visibilite: visible
+    statut: deprecie-proche
+
+  - id: CRT-06
+    composant: pki
+    emplacement: "pki/old-server.crt"
+    type: certificate
+    primitive: RSA-1024 / signature SHA-1
+    usage: "ancien certificat serveur (expiré)"
+    visibilite: visible
+    statut: a-bannir
+    notes: "RSA-1024 et SHA-1 : cassés"
+
+  - id: CRT-07
+    composant: pki
+    emplacement: "pki/backup/server-tls.crt.bak"
+    type: certificate
+    primitive: RSA-2048 / SHA-1
+    usage: "certificat oublié dans une sauvegarde"
+    visibilite: cache
+    masquage: backup
+    statut: a-bannir
+
+  - id: CRT-08
+    composant: pki
+    emplacement: "pki/monitoring-selfsigned.crt"
+    type: certificate
+    primitive: RSA-2048 (auto-signé)
+    usage: "certificat auto-signé d'un service de supervision"
+    visibilite: visible
+    statut: a-bannir
+    notes: "auto-signé : aucune chaîne de confiance"
+
+  - id: CRT-09
+    composant: pki
+    emplacement: "pki/ocsp-responder.crt"
+    type: certificate
+    primitive: RSA-2048 / signature RSA-SHA256
+    usage: "certificat du répondeur OCSP (révocation)"
+    visibilite: visible
+    statut: vulnerable-q
+
+  - id: CRT-10
+    composant: pki
+    emplacement: "pki/partner-imported.crt"
+    type: certificate
+    primitive: RSA-2048 (exposant e=3)
+    usage: "certificat partenaire importé"
+    visibilite: cache
+    masquage: dependance
+    statut: a-bannir
+    notes: "exposant public e=3 : anti-pattern"
+
+  # ==================== Module de signature de factures ====================
+  - id: FAC-01
+    composant: factures
+    emplacement: "factures/signer.py — algorithme de signature"
+    type: algorithm
+    primitive: RSA-2048 PKCS#1 v1.5
+    usage: "signature des factures"
+    visibilite: visible
+    statut: deprecie-proche
+    notes: "bourrage PKCS#1 v1.5 : préférer RSA-PSS"
+
+  - id: FAC-02
+    composant: factures
+    emplacement: "factures/signer.py — hachage avant signature"
+    type: algorithm
+    primitive: SHA-256
+    usage: "empreinte de la facture"
+    visibilite: visible
+    statut: robuste
+
+  - id: FAC-03
+    composant: factures
+    emplacement: "factures/signer.py — format de signature"
+    type: protocol
+    primitive: PAdES (signature détachée)
+    usage: "format de signature à valeur probante"
+    visibilite: visible
+    statut: robuste
+
+  - id: FAC-04
+    composant: factures
+    emplacement: "pki/facture-signing.key"
+    type: related-crypto-material
+    primitive: RSA-2048
+    usage: "clé privée de signature des factures"
+    visibilite: visible
+    statut: a-bannir
+    relations:
+      - type: cle-reutilisee
+        avec: CRT-04
+        note: "même paire de clés que le client mTLS — séparation des usages violée"
+
+  - id: FAC-05
+    composant: factures
+    emplacement: "factures/.env.example — secret d'horodatage"
+    type: related-crypto-material
+    primitive: secret HMAC
+    usage: "secret d'API d'horodatage dans un fichier d'exemple"
+    visibilite: cache
+    masquage: env-exemple
+    statut: a-bannir
+
+  # ==================== Sauvegardes ====================
+  - id: BKP-01
+    composant: backups
+    emplacement: "backups/backup.sh — chiffrement des sauvegardes (OpenPGP)"
+    type: algorithm
+    primitive: OpenPGP RSA-3072 + AES-256
+    usage: "chiffrement des sauvegardes de base"
+    visibilite: visible
+    statut: vulnerable-q
+    notes: "RSA-3072 vulnérable quantique ; AES-256 robuste"
+
+  # ==================== Connecteur legacy ====================
+  - id: LEG-01
+    composant: legacy
+    emplacement: "legacy/notifier.conf — chiffrement du connecteur"
+    type: algorithm
+    primitive: RC4
+    usage: "connecteur de notification interne hérité"
+    visibilite: visible
+    statut: a-bannir
+
+  # ==================== Dépendances (crypto indirecte) ====================
+  - id: DEP-01
+    composant: dependances
+    emplacement: "requirements.txt — cryptography"
+    type: algorithm
+    primitive: AES / RSA (via OpenSSL)
+    usage: "bibliothèque exposant des primitives"
+    visibilite: cache
+    masquage: dependance
+    statut: vulnerable-q
+    notes: "fournit aussi des primitives robustes"
+
+  - id: DEP-02
+    composant: dependances
+    emplacement: "requirements.txt — pyjwt"
+    type: algorithm
+    primitive: HMAC / RSA
+    usage: "bibliothèque de jetons JWT"
+    visibilite: cache
+    masquage: dependance
+    statut: vulnerable-q
+
+  - id: DEP-03
+    composant: dependances
+    emplacement: "requirements.txt — bcrypt / passlib"
+    type: algorithm
+    primitive: bcrypt
+    usage: "bibliothèque de hachage de mots de passe"
+    visibilite: cache
+    masquage: dependance
+    statut: robuste
